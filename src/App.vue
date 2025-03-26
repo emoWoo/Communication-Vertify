@@ -1,11 +1,11 @@
 <template>
-  <Login />
-   <!-- <Home></Home> -->
+  <!-- <Login /> -->
+   <Home></Home>
 </template>
 
 <script setup>
-import Login from './views/Login.vue'
-// import Home from './views/Home.vue'
+// import Login from './views/Login.vue'
+import Home from './views/Home.vue'
 </script>
 
 <style>
