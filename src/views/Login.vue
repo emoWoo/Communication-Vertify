@@ -34,13 +34,29 @@
 
 <script setup>
 import { reactive } from 'vue';
+import userApi from '@/api/user';
+// import { useRouter } from 'vue-router';
+
+// const router = useRouter();
+
 const formState = reactive({
-    username: '',
+    accountid: '',
     password: '',
     remember: true,
 });
 const onFinish = values => {
+    try {
+        const res = userApi.login({
+            accountid: values.accountid,
+            password: values.password,
+        });
+        console.log('res:', res);
+    } catch (error) {
+        console.log('error:', error);
+    }
+    // router.push('/home');
     console.log('Success:', values);
+    console.log('formState:', formState.value);
 };
 const onFinishFailed = errorInfo => {
     console.log('Failed:', errorInfo);
