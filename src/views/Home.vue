@@ -1,104 +1,176 @@
 <template>
     <div style="padding: 30px;">
         <a-tabs v-model:activeKey="activeKey" :tabBarStyle="{ pointerEvents: loadingKey ? 'none' : 'auto' }">
-            <a-tab-pane key="1" tab="系统基本功能">
-                <a-alert 
-                    v-if="alerts['1']" 
-                    :type="alerts['1'].type" 
-                    :message="alerts['1'].message" 
-                    banner closable 
-                    @close="alerts['1'] = null">
+            <a-tab-pane v-for="(op) in operations" :key="op.tabKey" :tab="op.title">
+                <a-alert v-if="alerts[op.tabKey]" :type="alerts[op.tabKey].type" :message="alerts[op.tabKey].message"
+                    banner closable @close="alerts[op.tabKey] = null">
                 </a-alert>
                 <div class="content">
-                    <a-button type="primary" size="large" :loading="loadingKey === 1" @click="sendOrder(1,'1')"
-                        :disabled="loadingKey !== null && loadingKey !== 1">系统任务与同步同信</a-button>
-                    <a-button type="primary" size="large" :loading="loadingKey === 2" @click="sendOrder(2,'1')"
-                        :disabled="loadingKey !== null && loadingKey !== 2">时钟/定时器</a-button>
-                    <a-button type="primary" size="large" :loading="loadingKey === 3"
-                        @click="sendOrder(3,'1')"
-                        :disabled="loadingKey !== null && loadingKey !== 3">中断/异常</a-button>
-                    <a-button type="primary" size="large" :loading="loadingKey === 4"
-                        @click="sendOrder(4,'1')"
-                        :disabled="loadingKey !== null && loadingKey !== 4">内存</a-button>
-                    <a-button type="primary" size="large" :loading="loadingKey === 5"
-                        @click="sendOrder(5,'1')"
-                        :disabled="loadingKey !== null && loadingKey !== 5">采集与上报频率</a-button>
-                </div>
-            </a-tab-pane>
-            <a-tab-pane key="2" tab="外设驱动">
-                <a-alert 
-                    v-if="alerts['2']" 
-                    :type="alerts['2'].type" 
-                    :message="alerts['2'].message" 
-                    banner closable 
-                    @close="alerts['2'] = null">
-                </a-alert>
-                <div class="content">
-                    <a-button type="primary" size="large" :loading="loadingKey === 6"
-                        @click="sendOrder(6,'2')"
-                        :disabled="loadingKey !== null && loadingKey !== 6">串口</a-button>
-                    <a-button type="primary" size="large" :loading="loadingKey === 7" @click="sendOrder(7,'2')"
-                        :disabled="loadingKey !== null && loadingKey !== 7">I2C</a-button>
-                </div>
-            </a-tab-pane>
-            <a-tab-pane key="3" tab="分布式软总线">
-                <a-alert 
-                    v-if="alerts['3']" 
-                    :type="alerts['3'].type" 
-                    :message="alerts['3'].message" 
-                    banner closable 
-                    @close="alerts['3'] = null">
-                </a-alert>
-                <div class="content">
-                    <a-button type="primary" size="large" :loading="loadingKey === 8" @click="sendOrder(8,'3')"
-                        :disabled="loadingKey !== null && loadingKey !== 8">蓝牙(BLE)(考虑外挂ws63测试机)</a-button>
-                    <a-button type="primary" size="large" :loading="loadingKey === 9"
-                        @click="sendOrder(9,'3')"
-                        :disabled="loadingKey !== null && loadingKey !== 9">星闪(可选)</a-button>
-                </div>
-            </a-tab-pane>
-            <a-tab-pane key="4" tab="通信协议">
-                <a-alert 
-                    v-if="alerts['4']" 
-                    :type="alerts['4'].type" 
-                    :message="alerts['4'].message" 
-                    banner closable 
-                    @close="alerts['4'] = null">
-                </a-alert>
-                <div class="content">
-                    <a-button type="primary" size="large" :loading="loadingKey === 10" @click="sendOrder(10,'4')"
-                        :disabled="loadingKey !== null && loadingKey !== 10">MQTT</a-button>
-                    <a-button type="primary" size="large" :loading="loadingKey === 11" @click="sendOrder(11,'4')"
-                        :disabled="loadingKey !== null && loadingKey !== 11">HTTP</a-button>
+                    <div v-for="(cmd, cmdIndex) in op.contents" :key="cmdIndex">
+                        <a-button type="primary" size="large" :loading="loadingKey === cmd.cmdId"
+                            @click="sendOrder(cmd.cmdId, op.tabKey)"
+                            :disabled="loadingKey !== null && loadingKey !== cmd.cmdId"
+                            style="margin-right: 10px;">{{ cmd.describe }}</a-button>
+                        <CheckCircleOutlined v-if="cmd.status === 1" style="font-size: 18px;color: #569c30;" />
+                        <CloseCircleOutlined v-if="cmd.status === 2" style="font-size: 18px;color: #e43b32;" />
+                    </div>
                 </div>
             </a-tab-pane>
             <a-tab-pane key="5" tab="日志">
-                <a-empty />
+                <a-spin :spinning="loading" tip="加载中...">
+                    <div class="log" v-if="logData.length">
+                        <pre class="log-content" v-if="logData.length">{{ logData.join("\n\n") }}</pre>
+                    </div>
+                    <a-empty v-else description="暂无数据" />
+                </a-spin>
             </a-tab-pane>
         </a-tabs>
 
     </div>
 </template>
 <script setup>
-import { ref } from 'vue';
+import { ref, watch, onUnmounted, reactive } from 'vue';
+import cmdApi from '@/api/cmd';
+import logApi from '@/api/log';
+import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons-vue';
+
 const activeKey = ref('1');
 const loadingKey = ref(null)
-const alerts=ref({})
+const alerts = ref({})
+const loading = ref(true)
 
-const sendOrder = (cmdId,tabKey) => {
+const operations = reactive([
+    {
+        tabKey: '1',
+        title: '系统基本功能',
+        contents: [
+            { cmdId: 1, describe: '系统任务与同步同信', status: 0 },
+            { cmdId: 2, describe: '时钟/定时器', status: 0 },
+            { cmdId: 3, describe: '中断/异常', status: 0 },
+            { cmdId: 4, describe: '内存', status: 0 },
+            { cmdId: 5, describe: '采集与上报频率', status: 0 },
+        ]
+    },
+    {
+        tabKey: '2',
+        title: '外设驱动',
+        contents: [
+            { cmdId: 6, describe: '串口', status: 0 },
+            { cmdId: 10, describe: 'I2C', status: 0 },
+        ]
+    },
+    {
+        tabKey: '3',
+        title: '分布式软总线',
+        contents: [
+            { cmdId: 7, describe: '蓝牙(BLE)(考虑外挂ws63测试机)', status: 0 },
+            { cmdId: 11, describe: '星闪(可选)', status: 0 },
+        ]
+    },
+    {
+        tabKey: '4',
+        title: '通信协议',
+        contents: [
+            { cmdId: 9, describe: 'MQTT', status: 0 },
+            { cmdId: 12, describe: 'HTTP', status: 0 },
+        ]
+    },
+])
+
+const sendOrder = async (cmdId, tabKey) => {
+    if (cmdId === 10 || cmdId === 11 || cmdId === 12) {
+        alerts.value[tabKey] = {
+            type: "error",
+            message: `该功能未开放测试`
+        };
+        return
+    }
+
     loadingKey.value = cmdId
     console.log(loadingKey.value)
 
-    // 模拟发送请求
-    setTimeout(() => {
-        loadingKey.value = null
-        const isSuccess = Math.random() > 0.5
+    const tab = operations.find(op => op.tabKey === tabKey);
+    const cmdItem = tab?.contents.find(cmd => cmd.cmdId === cmdId);
+
+    try {
+        const res = await cmdApi.sendcmd(cmdId)
+        console.log(res)
+        if (cmdId === 3 && !res.result) {
+            operations[tabKey].contents[2].status = 2
+            alerts.value[tabKey] = {
+                type: "error",
+                message: `中断异常测试失败`
+            };
+            throw new Error("中断异常测试失败");
+        }
+        // if (!res.status) {
+        if (cmdItem) cmdItem.status = 1;
         alerts.value[tabKey] = {
-            type: isSuccess ? "success" : "error",
-            message: isSuccess ? `操作成功！` : `操作失败，请重试。`
+            type: "success",
+            message: `测试成功！请查看日志`
         };
-    }, 8000)
+        // }
+    } catch (error) {
+        if (cmdItem) cmdItem.status = 2;
+        console.log('error', error)
+        alerts.value[tabKey] = {
+            type: "error",
+            message: `操作失败，请重试。`
+        }
+    } finally {
+        loadingKey.value = null
+    }
+
+    console.log('finished')
 }
+
+let logInterval = null;
+watch(activeKey, (newKey) => {
+    if (newKey === '5') {
+        fetchLog()
+        if (!logInterval) {
+            logInterval = setInterval(fetchLog, 3000); // 每 3 秒自动更新
+        }
+    } else {
+        clearInterval(logInterval);
+        logInterval = null;
+    }
+})
+//日志数组
+const logData = ref([])
+const fetchLog = async () => {
+    try {
+        const res = await logApi.getLog()
+        console.log(res)
+        const parsedData = []
+
+        res.forEach(item => {
+            const details = item.details;
+            if (details && details.message) {
+                let messageContent = "";
+                if (Array.isArray(details.message)) {
+                    messageContent = details.message.map(msg =>
+                        typeof msg === "object" ? JSON.stringify(msg) : msg
+                    ).join("\n");
+                } else {
+                    messageContent = details.message.toString();
+                }
+
+                parsedData.push(
+                    `Message:\n${messageContent}\n Receiver: ${item.receiver}\n Sender: ${item.sender}\n Timestamp: ${item.timestamp}`
+                );
+            }
+        });
+        logData.value = parsedData
+    } catch (error) {
+        console.log('error:', error)
+    } finally {
+        loading.value = false
+    }
+}
+onUnmounted(() => {
+    clearInterval(logInterval);
+});
 </script>
 
 <style scoped>
@@ -107,7 +179,7 @@ const sendOrder = (cmdId,tabKey) => {
     display: flex;
     flex-direction: column;
     align-items: start;
-    height: 100vh;
+    height: 88vh;
     /* background: pink; */
 }
 
@@ -117,5 +189,27 @@ button {
     border-radius: 5px;
     background-color: white; */
     margin-bottom: 20px;
+}
+
+.log {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    height: 88vh;
+    width: 88vw;
+    background: black;
+}
+
+.log-content {
+    width: 100%;
+    margin-top: 8px;
+    margin-left: 8px;
+    white-space: pre-wrap;
+    /* 自动换行 */
+    word-break: break-word;
+    /* 长单词换行 */
+    font-size: 14px;
+    color: #fff;
 }
 </style>
