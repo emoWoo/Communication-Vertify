@@ -9,12 +9,12 @@ class Curd {
   get = this._get.bind(this);
   post = this._post.bind(this);
 
-  _get(params) {
-    return http(this.baseUrl, "get", params);
+  _get(id,params) {
+    return http(this.baseUrl+(id ? `/${id}` : ''), "GET",params);
   }
 
-  _post(id = null, params) {
-    return http(this.baseUrl + (id ? `/${id}` : ' '), "post", params);
+  _post(params) {
+    return http(this.baseUrl, "POST", params);
   }
 }
 

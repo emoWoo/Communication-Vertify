@@ -1,19 +1,35 @@
 // Desc: http请求封装
-import axios from 'axios'
-const http =async (url, method, data={},headers={}) => {
-  try{
-    const response=await axios({
-        url: url,
-        method: method,
-        data: data,
-        headers: {...headers},
-    })
-    console.log(response)
-    return response.data
-  }catch(error){
-    console.log('http error',error)
-    throw error.response?error.response.data:error
-  }
-}
+const http = async (url, method, data = {}, headers = {}) => {
+  console.log(url);
 
-export default http
+  // const token=localStorage.getItem("token")
+  
+  if (method === "POST") {
+    headers["content-type"] = "application/json";
+  }
+
+  const options={
+    method,
+    headers:{...headers},
+  }
+
+  if(method==='POST'){
+    options.body=JSON.stringify(data)
+  }
+
+  try {
+    const response = await fetch(url, options);
+
+    if(!response.ok){
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    const result = await response.json();
+    console.log("Response:", result);
+    return result;
+  } catch (error) {
+    console.log("http error", error);
+    throw error
+  }
+};
+
+export default http;

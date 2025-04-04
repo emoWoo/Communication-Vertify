@@ -1,3 +1,3 @@
-const BASE_URL='192.168.137.246:5000/'
+const BASE_URL='/api/'
 
 export default BASE_URL
