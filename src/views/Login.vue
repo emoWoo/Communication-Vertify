@@ -53,14 +53,19 @@ const onFinish = async (values) => {
             password: values.password,
         });
         console.log('res:', res);
+        if(res.session.token){
+            localStorage.setItem('token', res.session.token);
+        }else{
+            throw new Error();
+        }
         if (res.status === 200) {
             router.push('/home')
         } else {
-            throw new Error("登录失败");
+            throw new Error();
         }
     } catch (error) {
         alert('账号或密码错误')
-        console.log('error:', error);
+        console.log('errorrrrrr:', error);
     }finally{
         loading.value=false
     }
@@ -68,6 +73,7 @@ const onFinish = async (values) => {
 const onFinishFailed = errorInfo => {
     console.log('Failed:', errorInfo);
 };
+
 </script>
 
 <style scoped>
