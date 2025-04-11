@@ -64,7 +64,7 @@ const operations = reactive([
         title: '分布式软总线',
         contents: [
             { cmdId: 7, describe: '蓝牙(BLE)(考虑外挂ws63测试机)', status: 0 },
-            { cmdId: 11, describe: '星闪(可选)', status: 0 },
+            { cmdId: 8, describe: '星闪(可选)', status: 0 },
         ]
     },
     {
@@ -78,7 +78,7 @@ const operations = reactive([
 ])
 
 const sendOrder = async (cmdId, tabKey) => {
-    if (cmdId === 10 || cmdId === 11 || cmdId === 12) {
+    if (cmdId === 10 || cmdId === 12) {
         alerts.value[tabKey] = {
             type: "error",
             message: `该功能未开放测试`
@@ -104,6 +104,8 @@ const sendOrder = async (cmdId, tabKey) => {
             throw new Error("中断异常测试失败");
         }
         // if (!res.status) {
+
+        //测试成功 alert、图标显示
         if (cmdItem) cmdItem.status = 1;
         alerts.value[tabKey] = {
             type: "success",
@@ -111,12 +113,14 @@ const sendOrder = async (cmdId, tabKey) => {
         };
         // }
     } catch (error) {
+
+        //测试失败 alert、图标显示
         if (cmdItem) cmdItem.status = 2;
-        console.log('error', error)
         alerts.value[tabKey] = {
             type: "error",
             message: `操作失败，请重试。`
         }
+        console.log('this is an error', error)
     } finally {
         loadingKey.value = null
     }
