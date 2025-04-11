@@ -55,6 +55,7 @@ const onFinish = async (values) => {
         console.log('res:', res);
         if(res.session.token){
             localStorage.setItem('token', res.session.token);
+            console.log(localStorage.getItem("token"))
         }else{
             throw new Error();
         }
