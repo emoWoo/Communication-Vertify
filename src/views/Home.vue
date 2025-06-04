@@ -63,8 +63,8 @@ const operations = reactive([
         tabKey: '3',
         title: '分布式软总线',
         contents: [
-            { cmdId: 7, describe: '蓝牙(BLE)(考虑外挂ws63测试机)', status: 0 },
-            { cmdId: 8, describe: '星闪(可选)', status: 0 },
+            { cmdId: 7, describe: '蓝牙(BLE)', status: 0 },
+            { cmdId: 8, describe: '星闪', status: 0 },
         ]
     },
     {
@@ -72,13 +72,12 @@ const operations = reactive([
         title: '通信协议',
         contents: [
             { cmdId: 9, describe: 'MQTT', status: 0 },
-            { cmdId: 12, describe: 'HTTP', status: 0 },
         ]
     },
 ])
 
 const sendOrder = async (cmdId, tabKey) => {
-    if (cmdId === 10 || cmdId === 12) {
+    if (cmdId === 10 ) {
         alerts.value[tabKey] = {
             type: "error",
             message: `该功能未开放测试`
@@ -161,7 +160,7 @@ const fetchLog = async () => {
                 }
 
                 parsedData.push(
-                    `Message:\n${messageContent}\n Receiver: ${item.receiver}\n Sender: ${item.sender}\n Timestamp: ${item.timestamp}`
+                    `Message:\n${messageContent}\n Receiver: ${item.receiver}\n Sender: ${item.sender}\n Timestamp: ${item.timestamp}\n Result: ${item.details.result}\n`
                 );
             }
         });
